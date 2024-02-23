@@ -1,0 +1,201 @@
+version: 1
+default_environment: dev
+project_id: 6f5fc85e-512f-4cd6-9c8c-db0afa9a5c00
+environments:
+- name: dev
+- name: staging
+- name: prod
+
+plugins:
+  extractors:
+  - name: tap-csv
+    variant: meltanolabs
+    pip_url: git+https://github.com/MeltanoLabs/tap-csv.git
+  - name: tap-order_details
+    inherit_from: tap-csv
+    config:
+      files:
+      - entity: order_details
+        path: ../data/order_details.csv
+        keys:
+        - order_id
+        - product_id
+        - unit_price
+        - quantity
+        - discount
+
+  - name: tap-final
+    inherit_from: tap-csv
+
+  - name: tap-postgres
+    variant: meltanolabs
+    pip_url: git+https://github.com/MeltanoLabs/tap-postgres.git
+    config:
+      database: northwind
+      user: northwind_user
+      host: localhost
+      port: 5432
+
+  - name: tap-categories
+    inherit_from: tap-postgres
+    select:
+    - public-categories.*
+
+  - name: tap-products
+    inherit_from: tap-postgres
+    config:
+      stream_maps:
+        public-products:
+          unit_price: str(unit_price)
+    select:
+    - public-products.*
+
+  - name: tap-suppliers
+    inherit_from: tap-postgres
+    select:
+    - public-suppliers.*
+
+  - name: tap-customers
+    inherit_from: tap-postgres
+    select:
+    - public-customers.*
+
+  - name: tap-customer_customer_demo
+    inherit_from: tap-postgres
+    select:
+    - public-customer_customer_demo.*
+
+  - name: tap-customer_demographics
+    inherit_from: tap-postgres
+    select:
+    - public-customer_demographics.*
+
+  - name: tap-orders
+    inherit_from: tap-postgres
+    config:
+      stream_maps:
+        public-orders:
+          freight: str(freight)
+    select:
+    - public-orders.*
+
+  - name: tap-employees
+    inherit_from: tap-postgres
+    select:
+    - public-employees.*
+
+  - name: tap-employee_territories
+    inherit_from: tap-postgres
+    select:
+    - public-employee_territories.*
+
+  - name: tap-territories
+    inherit_from: tap-postgres
+    select:
+    - public-territories.*
+
+  - name: tap-region
+    inherit_from: tap-postgres
+    select:
+    - public-region.*
+
+  - name: tap-shippers
+    inherit_from: tap-postgres
+    select:
+    - public-shippers.*
+
+  - name: tap-us_states
+    inherit_from: tap-postgres
+    select:
+    - public-us_states.*
+
+  loaders:
+  - name: target-csv
+    variant: meltanolabs
+    pip_url: git+https://github.com/MeltanoLabs/target-csv.git
+  - name: target-csv-order_details
+    inherit_from: target-csv
+    config:
+      custom_name: order_details
+
+  - name: target-csv-categories
+    inherit_from: target-csv
+    config:
+      custom_name: categories
+
+  - name: target-csv-products
+    inherit_from: target-csv
+    config:
+      custom_name: products
+
+  - name: target-csv-suppliers
+    inherit_from: target-csv
+    config:
+      custom_name: suppliers
+
+  - name: target-csv-customers
+    inherit_from: target-csv
+    config:
+      custom_name: customers
+
+  - name: target-csv-customer_customer_demo
+    inherit_from: target-csv
+    config:
+      custom_name: customer_customer_demo
+
+  - name: target-csv-customer_demographics
+    inherit_from: target-csv
+    config:
+      custom_name: customer_demographics
+
+  - name: target-csv-orders
+    inherit_from: target-csv
+    config:
+      custom_name: orders
+
+  - name: target-csv-employees
+    inherit_from: target-csv
+    config:
+      custom_name: employee_territories
+
+  - name: target-csv-employee_territories
+    inherit_from: target-csv
+    config:
+      custom_name: employee_territories
+
+  - name: target-csv-territories
+    inherit_from: target-csv
+    config:
+      custom_name: territories
+
+  - name: target-csv-region
+    inherit_from: target-csv
+    config:
+      custom_name: region
+
+  - name: target-csv-shippers
+    inherit_from: target-csv
+    config:
+      custom_name: shippers
+
+  - name: target-csv-us_states
+    inherit_from: target-csv
+    config:
+      custom_name: us_states
+
+  - name: target-postgres
+    variant: meltanolabs
+    pip_url: meltanolabs-target-postgres
+    config:
+      database: final_database
+      user: northwind_user
+      host: localhost
+      port: 5432
+      default_target_schema: public
+      add_record_metadata: false
+      activate_version: false
+
+  mappers:
+  - name: meltano-map-transformer
+    variant: meltano
+    pip_url: git+https://github.com/MeltanoLabs/meltano-map-transform.git
